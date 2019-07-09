@@ -5,7 +5,8 @@ Vue.use(Router)
 
 const router = new Router({
   routes: [
-    { name: 'home', path: '/', component: () => import('@/views/home') }
+    { name: 'home', path: '/', component: () => import('@/views/home') },
+    { name: 'login', path: '/login', component: () => import('@/views/login') }
   ]
 })
 

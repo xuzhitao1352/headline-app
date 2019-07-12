@@ -11,8 +11,13 @@ import 'vant/lib/index.css'
 import '@/assets/icon/iconfont.css'
 // 引入全局样式
 import '@/styles/index.css'
+// vue表单验证
+import zhCN from 'vee-validate/dist/locale/zh_CN'
+import VeeValidate, { Validator } from 'vee-validate'
 
 Vue.use(Vant)
+Vue.use(VeeValidate)
+Validator.localize('zh_CN', zhCN)
 
 // import {
 //   Button,
@@ -30,6 +35,12 @@ Vue.use(Vant)
 //   .use(NavBar)
 
 Vue.config.productionTip = false
+
+Vue.prototype.$sleep = sec => {
+  return new Promise((resolve, reject) => {
+    window.setTimeout(resolve, sec)
+  })
+}
 
 new Vue({
   router,

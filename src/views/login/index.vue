@@ -7,11 +7,12 @@
         clearable
         left-icon="iconfont icon-mobile"
         label="手机号"
-        placeholder="请输入用户名"
+        placeholder="请输入手机号"
         @click-right-icon="$toast('question')"
-        :error-message="errors.mobile"
+        v-validate="'required|digits:11'"
+        name="手机号"
+        :error-message="errors.first('手机号')"
       />
-
       <van-field
         v-model="userInfo.code"
         center
@@ -20,8 +21,11 @@
         clearable
         type="password"
         placeholder="请输入验证码"
-        :error-message="errors.code"
+        v-validate="'required|digits:6'"
+        name="验证码"
+        :error-message="errors.first('验证码')"
       >
+
         <van-button size="small" class="yzm-auth-code" slot="button" type="default">获取验证码</van-button>
       </van-field>
       <div class="login-btn-box">
@@ -39,37 +43,39 @@ export default {
     return {
       userInfo: {
         mobile: '13520809374',
-        code: '123456'
-      },
-      errors: {
-        mobile: '',
-        code: ''
+        code: '246810'
       },
       isLoginLoding: false
     }
   },
   methods: {
+    // 登录
     async handleLogin () {
       try {
-        let user = this.userInfo
-        let errors = this.errors
-        if (user.mobile === '') {
-          errors.mobile = '请输入手机号'
+        const valid = await this.$validator.validate()
+        if (!valid) {
+          this.$notify({
+            message: '格式有误',
+            background: '#FFCC33',
+            color: '#000'
+          })
           return
         }
-        if (user.code === '') {
-          errors.code = '请输入验证码'
-          return
-        }
-        // 清空错误提醒
-        errors.mobile = ''
-        errors.code = ''
         this.isLoginLoding = true
-        const data = await login(user)
+
+        const data = await login(this.userInfo)
         this.$store.commit('setUser', data)
         this.$router.push('/')
+        this.$notify({
+          message: '登录成功',
+          background: '#33FF33'
+        })
       } catch (err) {
         console.log(err)
+        this.$notify({
+          message: '账户名密码有误',
+          background: '#1989fa'
+        })
       }
       this.isLoginLoding = false
     }

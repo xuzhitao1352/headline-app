@@ -2,7 +2,7 @@
   <div>
     <van-nav-bar title="主页" fixed></van-nav-bar>
     <van-tabs class="pull-tabs" v-model="activechannelIndex">
-      <div class="label-edit" slot="nav-right" @click="isEdit = true">
+      <div class="label-edit" slot="nav-right" @click="isChannelShow = true">
         <van-icon class="icon iconfont icon-menu"/>
       </div>
       <van-tab v-for="channelItem in channels" :title="channelItem.name" :key="channelItem.id">
@@ -32,14 +32,24 @@
       <van-tabbar-item icon="friends-o" to="/video">视频</van-tabbar-item>
       <van-tabbar-item icon="setting-o" to="/my">我的</van-tabbar-item>
     </van-tabbar>
+
+    <!-- 频道组件 -->
+    <home-channel
+    v-model="isChannelShow"
+    :user-channels.sync="channels"
+    :active-channel.sync="activechannelIndex"/>
   </div>
 </template>
 
 <script>
 import { getChannels } from '@/api/channel'
 import { getArticles } from '@/api/article'
+import HomeChannel from './components/channel'
 export default {
   name: 'AppHome',
+  components: {
+    HomeChannel
+  },
   data () {
     return {
       activechannelIndex: 0,
@@ -47,7 +57,14 @@ export default {
       upRefresh: false,
       upRefreshFinish: false,
       channels: [],
-      isEdit: false
+      isChannelShow: false
+    }
+  },
+  watch: {
+    async 'isChannelShow' () {
+      if (!this.isChannelShow && !this.channels[this.activechannelIndex].articles) {
+        this.loadChannels()
+      }
     }
   },
   created () {
@@ -59,7 +76,7 @@ export default {
     }
   },
   methods: {
-    // 上拉加载跟多
+    // 上拉加载更多
     async upLodingMore () {
       await this.$sleep(200)
       const articles = await this.loadArticles()
@@ -91,13 +108,17 @@ export default {
     },
     async loadChannels () {
       try {
-        const { channels } = await getChannels()
-        channels.forEach(item => {
+        if (!window.localStorage.getItem('channels')) {
+          const { channels } = await getChannels()
+          window.localStorage.setItem('channels', JSON.stringify(channels))
+        }
+        const localChannels = JSON.parse(window.localStorage.getItem('channels'))
+        localChannels.forEach(item => {
           item.articles = []
           item.pre_timestamp = Date.now()
           item.pullSuccessText = '' // 加载成功提示文字
         })
-        this.channels = channels
+        this.channels = localChannels
       } catch (err) {
         console.log(err)
       }
@@ -105,6 +126,7 @@ export default {
     async loadArticles () {
       try {
         const artChannel = this.activeChannel
+        console.log(artChannel)
         const res = await getArticles(artChannel.id, artChannel.pre_timestamp, 1)
         if (res.results.length === 0 && artChannel.artives) {
           // 初始化数据

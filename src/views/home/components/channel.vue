@@ -6,7 +6,7 @@
       position="bottom"
       :style="{ height: '95%' }">
       <div class="channel">
-        <van-icon class="popup-close" name="cross" @click="handleClose"></van-icon>
+        <van-icon class="popup-close" name="cross" @click="$emit('input', false)"></van-icon>
         <div class="channel-my">
           <div class="channel-title">
             <h3>我的频道</h3>
@@ -54,7 +54,7 @@
 </template>
 
 <script>
-import { getAllChannel } from '@/api/channel'
+import { getAllChannel, updateUserChannel, delUserChannel } from '@/api/channel'
 
 export default {
   name: 'HomeChannel',
@@ -71,6 +71,10 @@ export default {
     activeChannel: {
       type: Number,
       default: 0
+    },
+    userArticles: {
+      type: Array,
+      default: () => []
     }
   },
   created () {
@@ -89,29 +93,63 @@ export default {
       isEdit: false
     }
   },
+  watch: {
+    async 'value' () {
+      if (!this.value) {
+        this.isEdit = false
+      }
+    }
+  },
   methods: {
-    handleAddChannel (item) {
-      const channelStr = window.localStorage.getItem('channels')
-      const channels = JSON.parse(channelStr)
-      channels.push(item)
-      this.$emit('update:userChannels', channels)
-      window.localStorage.setItem('channels', JSON.stringify(channels))
+    async handleAddChannel (item) {
+      try {
+        const articles = this.userArticles
+        const channels = this.userChannels
+        channels.push(item)
+        articles.push({ id: item.id, articles: [], pre_timestamp: Date.now(), pullSuccessText: '' })
+        this.$emit('update:user-articles', articles)
+        this.$emit('update:userChannels', channels)
+        const { user } = this.$store.state
+        // 登录
+        if (user) {
+          await updateUserChannel([{
+            id: item.id,
+            seq: channels.length - 1 // 序号
+          }])
+          return
+        }
+        // 未登录
+        window.localStorage.setItem('channels', JSON.stringify(channels))
+      } catch (err) {
+        console.log(err)
+      }
     },
-    handleMyChannel (id, index) {
+    async handleMyChannel (id, index) {
       if (!this.isEdit) {
         this.$emit('update:activeChannel', index)
         this.$emit('input', false)
         return
       }
-      const channelStr = window.localStorage.getItem('channels')
-      const channels = JSON.parse(channelStr)
-      channels.splice(index, 1)
-      this.$emit('update:userChannels', channels)
-      window.localStorage.setItem('channels', JSON.stringify(channels))
-    },
-    handleClose () {
-      this.$emit('input', false)
-      this.isEdit = false
+      try {
+        if (index <= this.activeChannel) {
+          let i = this.activeChannel - 1
+          this.$emit('update:active-channel', i)
+        }
+        const articles = this.userArticles
+        const channels = this.userChannels
+        channels.splice(index, 1)
+        articles.splice(index, 1)
+        this.$emit('update:user-articles', articles)
+        this.$emit('update:userChannels', channels)
+        const { user } = this.$store.state
+        if (user) {
+          await delUserChannel(id)
+          return
+        }
+        window.localStorage.setItem('channels', JSON.stringify(channels))
+      } catch (err) {
+        console.log(err)
+      }
     },
     async loadAllChannel () {
       try {

@@ -29,7 +29,7 @@
         <van-button size="small" class="yzm-auth-code" slot="button" type="default">获取验证码</van-button>
       </van-field>
       <div class="login-btn-box">
-        <van-button type="info" size="large" @click="handleLogin" loading-text="登录中..." :loding="isLoginLoding">登录</van-button>
+        <van-button :loading="isLoginLoding" type="info" size="large" @click="handleLogin" loading-text="登录中...">登录</van-button>
       </div>
     </van-cell-group>
   </div>
@@ -62,10 +62,13 @@ export default {
           return
         }
         this.isLoginLoding = true
-
         const data = await login(this.userInfo)
         this.$store.commit('setUser', data)
-        this.$router.push('/')
+        // pc端
+        const redirect = this.$route.query.redirect || '/'
+        this.$router.push(redirect)
+        // 移动端
+        // this.$router.back()
         this.$notify({
           message: '登录成功',
           background: '#33FF33'
